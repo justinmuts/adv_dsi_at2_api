@@ -1,0 +1,37 @@
+from fastapi import FastAPI
+from starlette.responses import JSONResponse
+from joblib import load
+import pandas as pd
+
+
+multi_class = load('../models/pytorch_multi_classification_beer_v2.pt')
+
+# read root
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+
+# health check 
+@app.get('/health', status_code=200)
+def healthcheck():
+    return 'Multi Classification is all ready to go!'
+
+#format features
+def format_features(brewery_name: str, review_aroma: int , review_appearance:int, review_palate: int, review_taste:int, beer_abv: int):
+    return {
+        'Brewery name': [brewery_name],
+        'Review Aroma': [review_aroma],
+        'Review Appearance': [review_appearance],
+        'Review Palate': [review_palate],
+	'Review Taste': [review_taste],
+	'Beer Abv': [beer_abv]
+    }
+
+
+# Prediction
+@app.get("/pytorch/multi_classification")
+def predict(brewery_name: str, review_aroma: int , review_appearance:int, review_palate: int, review_taste:int, beer_abv: int):
+    features = format_features(brewery_name, review_aroma, review_apperance, review_palate, review_taste, beer_abv)
+    obs = pd.DataFrame(features)
+    pred = multi_class.predict(obs)
+    return JSONResponse(pred.tolist())
