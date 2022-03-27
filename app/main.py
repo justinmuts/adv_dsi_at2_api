@@ -9,7 +9,6 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
-
 from typing import List, Optional
 from fastapi import FastAPI, Query, Response
 
@@ -30,6 +29,7 @@ class PytorchMultiClass(nn.Module):
 
 multi_class = PytorchMultiClass(6)
 
+# LOAD THE DATASET
 # multi_class = torch.load('../models/pytorch_multi_beer_style.pt')
 multi_class.load_state_dict(torch.load('../models/pytorch_multi_classification_beer_v2.pt'))
 # multi_class = torch.load('../pytorch_multi_classification_beer_250322.pt')
@@ -53,7 +53,7 @@ def format_features(brewery_name: str, review_aroma: float , review_appearance: 
     brew_index = list(brew_name['0'].squeeze())
     brew_index = brew_index.index(brewery_name)
     return {
-        'Brewery name': [brew_index],
+        'Brewery name (case sensitive)': [brew_index],
         'Review Aroma': [review_aroma],
         'Review Appearance': [review_appearance],
         'Review Palate': [review_palate],
@@ -62,12 +62,12 @@ def format_features(brewery_name: str, review_aroma: float , review_appearance: 
     }
 
 
-# THE BREWERY NAME LIST AND BEER STYLE LIST 
+# LOADING THE BREWERY NAME LIST AND BEER STYLE LIST 
 brew_name = pd.read_csv('./data/brewery_name_list.csv')
 beer_style = pd.read_csv('./data/beer_style_list.csv')
 
 
-# PREDICTION OF BEER (SINGLE)
+# SINGLE INPUT PREDICTION OF BEER (SINGLE)
 @app.get("/beer/type/")
 def predict(brewery_name: str, review_aroma: float , review_appearance: float, review_palate: float, review_taste: float, beer_abv: float):
 
@@ -93,16 +93,16 @@ def predict(brewery_name: str, review_aroma: float , review_appearance: float, r
     # return { 'Predicted beer style is =>' : 'beer_style.squeeze()[output]' } 
     return { 'Predicted beer style is =>' : beer_style.squeeze()[output] } 
 
-#--------------------
-# IDENTIFY NUMBER OF RECORDS IN dict()
+
+# CREATE ID NUMBER OF RECORDS IN dict()
 def dict_len(dict):
     no_count = sum([1 if isinstance(dict[x], (str, int))
                  else len(dict[x]) 
                  for x in dict])
     return no_count
-#---------------------------------------------------
-# RETURNING BEER PREDICTIONS FOR A MULTIPLE INPUTS 
-#---------------------------------------------------
+
+
+# RETURNING BEER PREDICTIONS FOR MULTIPLE INPUTS 
 @app.get("/beers/type/")
 def predict_beers(brew_input: Optional[List[str]] = Query(None)):
     query_items = {"input brewery_names":brew_input}
@@ -125,7 +125,7 @@ def predict_beers(brew_input: Optional[List[str]] = Query(None)):
         
         # create single row dict - convert features 1-5 into float 
         # - plus brew_ind for brewery name index
-        dict = {'brewery_name': beer_str[0],  
+        dict = {'brewery_name (case sensitive)': beer_str[0],  
                 'review_aroma': float(beer_str[1]), 
                 'review_appearance': float(beer_str[2]), 
                 'review_palate': float(beer_str[3]), 
